@@ -1,0 +1,23 @@
+{
+  "name": "Estimación Precios Global Frut",
+  "short_name": "CalcuHuertas",
+  "description": "Sistema de estimación de precios de aguacate por calibre y mercado",
+  "start_url": "index.php",
+  "display": "fullscreen",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+ 
+
+  "icons": [
+    {
+      "src": "icons/Global_Frut.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/Global_Frut.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
