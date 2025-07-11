@@ -81,6 +81,16 @@
     <!-- BOTÓN GUARDAR -->
     <button id="btnGuardar" disabled class="w-full bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-lg mt-4 opacity-50 cursor-not-allowed">Guardar estimación</button>
 
+    <!-- Mensaje de confirmación -->
+    <div id="mensajeConfirmacion" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 hidden">
+        <div class="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-bounce transition-all duration-500">
+            <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span id="textoConfirmacion">¡Estimación guardada correctamente!</span>
+        </div>
+    </div>
+
     <script src="js/buscar_huertas.js">
     </script>
 
@@ -231,8 +241,13 @@
                 });
 
                 if (res.ok) {
-                    alert('✅ Estimación guardada correctamente.');
-                    location.reload();
+                    // Mostrar mensaje de confirmación
+                    const mensaje = document.getElementById('mensajeConfirmacion');
+                    mensaje.classList.remove('hidden');
+                    setTimeout(() => {
+                        mensaje.classList.add('hidden');
+                        location.reload();
+                    }, 2000);
                 } else {
                     alert('❌ Error al guardar la estimación.');
                 }
