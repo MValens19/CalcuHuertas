@@ -5,10 +5,10 @@ const urlsToCache = [
   'manifest.json',
   'icons/Global_Frut.png',
   'icons/logoglobal.png',
-  // CDN de Tailwind (opcional, mejor descargar local)
-  'https://cdn.tailwindcss.com',
-
-  // Si tienes otros scripts o CSS locales, agregarlos aquí
+  'js/buscar_huertas.js',
+  'js/buscar_municipio.js',
+  'js/calculo.js',
+  // ...otros archivos necesarios
 ];
 
 // Instalación: guardar los recursos en caché
