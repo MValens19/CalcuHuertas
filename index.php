@@ -47,10 +47,10 @@
             <!-- HUERTAS -->
             <input list="sugerenciasHuerta" id="inputHuerta" name="nombre_huerta"
                 class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white"
-                placeholder="Nombre Huerta...">
+                placeholder="Nombre Huerta..." required>
             <datalist id="sugerenciasHuerta"></datalist>
 
-            <input type="text" placeholder="Estimación de cosecha " class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" />
+            <input type="text" placeholder="Estimación de cosecha" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" />
 
             <!-- MUNICIPIO -->
             <select id="selectMunicipio" name="municipio" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white">
@@ -59,11 +59,11 @@
 
             <!-- TIPO CORTE -->
             <div class="flex flex-col gap-3 sm:flex-row">
-                <select id="selectGramaje" name="gramaje" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white">
+                <select id="selectGramaje" name="gramaje" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required>
                     <option value="">Seleccione un gramaje</option>
                 </select>
 
-                <select id="selectTipoCorte" name="tipo_corte" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white">
+                <select id="selectTipoCorte" name="tipo_corte" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required>
                     <option value="">Seleccione tipo de corte</option>
                 </select>
             </div>
@@ -75,10 +75,10 @@
 
             <!-- DESTINO DE EXPORTACIÓN -->
             <label for="exportacion" class="block text-sm font-medium text-gray-300">Destino de exportación</label>
-            <select id="exportacion" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white">
+            <select id="exportacion" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required>
                 <option value="">Seleccione una opción</option>
-                <option value="usa">USA </option>
-                <option value="asia">Japón / Canadá </option>
+                <option value="usa">USA</option>
+                <option value="asia">Japón / Canadá</option>
             </select>
 
             <!-- SECCIÓN PARA FOTOS -->
@@ -96,16 +96,21 @@
         <!-- RESULTADO PROMEDIO -->
         <div id="resultadoPromedio" class="w-full mt-4 text-center font-semibold text-lg"></div>
 
+        <!-- SPINNER DE CARGA -->
+        <div id="spinnerCarga" class="hidden w-full flex justify-center mt-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+
         <!-- BOTÓN GUARDAR -->
         <button id="btnGuardar" disabled class="w-full bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-lg mt-4 opacity-50 cursor-not-allowed">Guardar estimación</button>
 
         <!-- Mensaje de confirmación -->
         <div id="mensajeConfirmacion" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 hidden">
-            <div class="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-bounce transition-all duration-500">
+            <div id="mensajeContenedor" class="text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-bounce transition-all duration-500">
                 <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                 </svg>
-                <span id="textoConfirmacion">¡Estimación guardada correctamente!</span>
+                <span id="textoConfirmacion"></span>
             </div>
         </div>
 
@@ -138,8 +143,8 @@
 
     <script src="js/buscar_huertas.js"></script>
     <script src="js/buscar_municipio.js"></script>
-    <script src="js/offline.js"></script> <!-- Nuevo script para IndexedDB y offline -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Para gráficos en reportes -->
+    <script src="js/offline.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         // Inicializar fecha
@@ -151,6 +156,8 @@
         const inputFoto = document.getElementById('inputFoto');
         const vistaPrevia = document.getElementById('vistaPrevia');
         const estadoRed = document.getElementById('estadoRed');
+        const spinnerCarga = document.getElementById('spinnerCarga');
+        const mensajeContenedor = document.getElementById('mensajeContenedor');
 
         // Precios simulados por calibre y mercado
         let preciosSimulados = {};
@@ -180,7 +187,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             await cargarPrecios();
             await cargarGramajesTipos();
-            // Actualizar estado de red
+            await cargarHuertas(); // Asegurar que las huertas se carguen
             estadoRed.textContent = navigator.onLine ? 'Online' : 'Offline';
         });
 
@@ -218,13 +225,11 @@
                 contenedor.innerHTML += `<textarea placeholder="Observaciones" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white mt-4"></textarea>`;
             }
 
-            // Añadir evento input a los nuevos inputs para calcular automáticamente
             document.querySelectorAll('.input-porcentaje').forEach(input => {
                 input.addEventListener('input', calcularPromedio);
             });
         });
 
-        // Función para crear sección con etiquetas y inputs con % a la derecha
         function createSection(titulo, calibres) {
             let html = `<h2 class="text-md font-semibold text-green-400 mt-4">${titulo}</h2>`;
             calibres.forEach(c => {
@@ -293,6 +298,10 @@
                 return;
             }
 
+            // Mostrar spinner
+            spinnerCarga.classList.remove('hidden');
+            btnGuardar.disabled = true;
+
             // Obtener ubicación actual
             let latitud = null;
             let longitud = null;
@@ -305,7 +314,9 @@
             } catch (error) {
                 console.error('Error al obtener ubicación:', error);
                 alert('No se pudo obtener la ubicación. Asegúrate de permitir el acceso a la geolocalización.');
-                return; // Opcional: continuar sin ubicación si se desea
+                spinnerCarga.classList.add('hidden');
+                btnGuardar.disabled = false;
+                return;
             }
 
             const data = {
@@ -320,7 +331,7 @@
                 exportacion,
                 observaciones: document.querySelector('textarea')?.value || '',
                 promedio_estimado: promedio,
-                foto: vistaPrevia.src || '', // Base64 de la foto
+                foto: vistaPrevia.src || '',
                 latitud,
                 longitud,
                 detalles: {}
@@ -344,31 +355,42 @@
                         method: 'POST',
                         body: formData
                     });
+                    const responseData = await res.json();
 
-                    if (res.ok) {
-                        mostrarConfirmacion('¡Estimación guardada correctamente!');
+                    spinnerCarga.classList.add('hidden');
+                    btnGuardar.disabled = false;
+
+                    if (responseData.status === 'OK') {
+                        mostrarConfirmacion('¡Estimación guardada en el servidor!', 'bg-green-600');
                         setTimeout(() => location.reload(), 2000);
                     } else {
-                        alert('❌ Error al guardar la estimación.');
+                        alert('❌ Error al guardar la estimación: ' + responseData.error);
                     }
                 } else {
                     await guardarPendiente(data);
-                    mostrarConfirmacion('Estimación guardada localmente. Se enviará cuando haya conexión.');
+                    spinnerCarga.classList.add('hidden');
+                    btnGuardar.disabled = false;
+                    mostrarConfirmacion('¡Estimación guardada localmente! Se sincronizará al reconectar.', 'bg-yellow-600');
                 }
             } catch (error) {
                 console.error('Error al guardar:', error);
+                spinnerCarga.classList.add('hidden');
+                btnGuardar.disabled = false;
                 alert('❌ Error de conexión con el servidor.');
             }
         });
 
-        function mostrarConfirmacion(texto) {
+        function mostrarConfirmacion(texto, bgColor) {
             const mensaje = document.getElementById('mensajeConfirmacion');
-            document.getElementById('textoConfirmacion').textContent = texto;
+            const textoConfirmacion = document.getElementById('textoConfirmacion');
+            textoConfirmacion.textContent = texto;
+            mensajeContenedor.classList.remove('bg-green-600', 'bg-yellow-600');
+            mensajeContenedor.classList.add(bgColor);
             mensaje.classList.remove('hidden');
             setTimeout(() => mensaje.classList.add('hidden'), 3000);
         }
 
-        // Cargar gramajes y tipos con soporte offline (similar a cargarPrecios)
+        // Cargar gramajes y tipos con soporte offline
         async function cargarGramajesTipos() {
             try {
                 let data;
@@ -387,6 +409,9 @@
                 const selectGramaje = document.getElementById('selectGramaje');
                 const selectTipoCorte = document.getElementById('selectTipoCorte');
 
+                selectGramaje.innerHTML = '<option value="">Seleccione un gramaje</option>';
+                selectTipoCorte.innerHTML = '<option value="">Seleccione tipo de corte</option>';
+
                 data.gramajes.forEach(g => {
                     const option = document.createElement('option');
                     option.value = g;
@@ -402,48 +427,19 @@
                 });
             } catch (error) {
                 console.error('Error al cargar gramajes y tipos de corte:', error);
+                alert('Error al cargar gramajes y tipos de corte. Intenta de nuevo más tarde.');
             }
         }
 
         // Sincronización al reconectar
         window.addEventListener('online', async () => {
             estadoRed.textContent = 'Online';
-            const db = await abrirDB();
-            const tx = db.transaction('estimacionesPendientes', 'readwrite');
-            const store = tx.objectStore('estimacionesPendientes');
-            const pendientes = await store.getAll();
-            for (const data of pendientes) {
-                const formData = new FormData();
-                formData.append('data', JSON.stringify(data));
-                if (data.foto) {
-                    formData.append('foto', dataURLtoFile(data.foto, 'foto.jpg'));
-                }
-                const res = await fetch('controller/db_guardar_estimacion.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                if (res.ok) {
-                    await store.delete(data.id); // Asume que tienes un id autoIncrement
-                }
-            }
-            // Notificación push si configurada
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                navigator.serviceWorker.controller.postMessage('sync-complete');
-            }
+            await sincronizarPendientes();
         });
 
         window.addEventListener('offline', () => {
             estadoRed.textContent = 'Offline';
         });
-
-        // Función helper para convertir base64 a File
-        function dataURLtoFile(dataurl, filename) {
-            if (!dataurl) return null;
-            let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-            while (n--) u8arr[n] = bstr.charCodeAt(n);
-            return new File([u8arr], filename, { type: mime });
-        }
 
         // Navegación entre secciones
         const seccionEstimacion = document.getElementById('seccionEstimacion');
@@ -477,10 +473,12 @@
             if (navigator.onLine) {
                 const res = await fetch('controller/db_obtener_estimaciones.php');
                 estimaciones = await res.json();
-                // Guardar en IndexedDB si quieres cachear historial
+                const db = await abrirDB();
+                const tx = db.transaction('config', 'readwrite');
+                tx.objectStore('config').put({ id: 'historial', data: estimaciones });
             } else {
                 const db = await abrirDB();
-                estimaciones = await db.transaction('estimacionesPendientes', 'readonly').objectStore('estimacionesPendientes').getAll();
+                estimaciones = (await db.transaction('config', 'readonly').objectStore('config').get('historial'))?.data || [];
             }
             estimaciones.forEach(e => {
                 const ubicacion = e.latitud && e.longitud ? `${e.latitud}, ${e.longitud}` : 'No disponible';
@@ -504,7 +502,6 @@
                 alert('Reportes requieren conexión a internet.');
                 return;
             }
-            // Ejemplo de gráfico con Chart.js (ajusta según datos)
             const ctx = document.getElementById('chartPromedios').getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
