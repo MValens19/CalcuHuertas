@@ -14,6 +14,10 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#0f172a" />
     <link rel="icon" href="icons/Global_Frut.png" />
+    <script type="module" src="js/offline.js"></script>
+    <script src="js/buscar_huertas.js"></script>
+    <script src="js/buscar_municipio.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-4">
@@ -28,9 +32,8 @@
         <button id="btnReportes" class="text-white">Reportes</button>
     </nav>
 
-    <!-- SECCIÓN DE ESTIMACIÓN (principal, visible por defecto) -->
+    <!-- SECCIÓN DE ESTIMACIÓN -->
     <div id="seccionEstimacion" class="w-full">
-
         <!-- LOGO -->
         <img src="icons/logoglobal.png" alt="Logo Global Frut" class="w-50 h-20 mb-2 bg-gray-700 rounded-lg" />
 
@@ -42,52 +45,35 @@
 
         <!-- FORMULARIO PREVIO -->
         <form id="formularioPrevio" class="w-full space-y-3">
-            <input type="text" placeholder="Nombre del productor" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required />
-
-            <!-- HUERTAS -->
-            <input list="sugerenciasHuerta" id="inputHuerta" name="nombre_huerta"
-                class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white"
-                placeholder="Nombre Huerta..." required>
+            <input type="text" name="productor" placeholder="Nombre del productor" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required />
+            <input list="sugerenciasHuerta" id="inputHuerta" name="huerta" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" placeholder="Nombre Huerta..." required>
             <datalist id="sugerenciasHuerta"></datalist>
-
-            <input type="text" placeholder="Estimación de cosecha" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" />
-
-            <!-- MUNICIPIO -->
-            <select id="selectMunicipio" name="municipio" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white">
+            <input type="text" name="estimacion_cosecha" placeholder="Estimación de cosecha" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" />
+            <select id="selectMunicipio" name="municipio" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required>
                 <option value="">Seleccione un municipio</option>
             </select>
-
-            <!-- TIPO CORTE -->
             <div class="flex flex-col gap-3 sm:flex-row">
                 <select id="selectGramaje" name="gramaje" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required>
                     <option value="">Seleccione un gramaje</option>
                 </select>
-
                 <select id="selectTipoCorte" name="tipo_corte" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required>
                     <option value="">Seleccione tipo de corte</option>
                 </select>
             </div>
-
-            <!-- JEFE DE ACOPIO -->
-            <select id="selectJefe" name="jefe_acopio" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white">
+            <select id="selectJefe" name="jefe_acopio" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required>
                 <option value="">Seleccione un jefe</option>
             </select>
-
-            <!-- DESTINO DE EXPORTACIÓN -->
             <label for="exportacion" class="block text-sm font-medium text-gray-300">Destino de exportación</label>
-            <select id="exportacion" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required>
+            <select id="exportacion" name="exportacion" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" required>
                 <option value="">Seleccione una opción</option>
                 <option value="usa">USA</option>
                 <option value="asia">Japón / Canadá</option>
             </select>
-
-            <!-- SECCIÓN PARA FOTOS -->
             <div class="mt-4">
                 <label class="block text-sm font-medium text-gray-300">Adjuntar foto (opcional)</label>
-                <input type="file" accept="image/*" capture="camera" id="inputFoto" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" />
+                <input type="file" accept="image/*" capture="camera" id="inputFoto" name="foto" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" />
                 <img id="vistaPrevia" class="mt-2 w-full h-auto rounded-lg hidden" alt="Vista previa de la foto" />
             </div>
-
         </form>
 
         <!-- CONTENEDOR PARA FORMULARIOS DINÁMICOS -->
@@ -99,24 +85,39 @@
         <!-- SPINNER DE CARGA -->
         <div id="spinnerCarga" class="hidden w-full flex justify-center mt-4">
             <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            <span class="ml-2 text-blue-300">Guardando...</span>
         </div>
 
         <!-- BOTÓN GUARDAR -->
         <button id="btnGuardar" disabled class="w-full bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-lg mt-4 opacity-50 cursor-not-allowed">Guardar estimación</button>
 
-        <!-- Mensaje de confirmación -->
+        <!-- MENSAJE DE CONFIRMACIÓN -->
         <div id="mensajeConfirmacion" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 hidden">
             <div id="mensajeContenedor" class="text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-bounce transition-all duration-500">
                 <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                <span id="textoConfirmacion"></span>
+                <span id="textoConfirmacion">¡Estimación guardada correctamente!</span>
             </div>
         </div>
-
     </div>
 
-    <!-- SECCIÓN DE HISTORIAL (oculta por defecto) -->
+    <div id="seccionHistorial" class="w-full hidden">
+    <h2 class="text-lg font-semibold text-center mb-4">Historial de Estimaciones</h2>
+    <div id="listaHistorial" class="space-y-4"></div> <!-- Aquí carga el historial -->
+</div>
+
+<div id="seccionReportes" class="w-full hidden">
+    <h2 class="text-lg font-semibold text-center mb-4">Reportes</h2>
+    <div class="flex flex-col gap-4">
+        <input type="date" id="fechaInicio" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" />
+        <input type="date" id="fechaFin" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" />
+        <button id="btnGenerarReporte" class="w-full bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-lg">Generar Reporte</button>
+        <canvas id="chartPromedios" class="w-full h-64"></canvas>
+    </div>
+</div>
+
+    <!-- SECCIÓN DE HISTORIAL -->
     <div id="historial" class="w-full mt-4 hidden">
         <h2 class="text-md font-semibold text-green-400">Historial de Estimaciones</h2>
         <table class="w-full bg-gray-800 rounded-lg">
@@ -132,7 +133,7 @@
         </table>
     </div>
 
-    <!-- SECCIÓN DE REPORTES (oculta por defecto) -->
+    <!-- SECCIÓN DE REPORTES -->
     <div id="reportes" class="w-full mt-4 hidden">
         <h2 class="text-md font-semibold text-green-400">Reportes</h2>
         <input type="date" id="fechaInicio" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white" />
@@ -141,12 +142,18 @@
         <canvas id="chartPromedios" class="w-full h-64 bg-gray-700 rounded-lg mt-4"></canvas>
     </div>
 
+    <script src="js/offline.js"></script>
     <script src="js/buscar_huertas.js"></script>
     <script src="js/buscar_municipio.js"></script>
-    <script src="js/offline.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script>
+    <script type="module">
+        import {
+            abrirDB,
+            guardarPendiente,
+            sincronizarPendientes,
+            dataURLtoFile
+        } from './js/offline.js';
         // Inicializar fecha
         document.getElementById('fechaActual').textContent = new Date().toLocaleDateString('es-MX');
 
@@ -159,252 +166,52 @@
         const spinnerCarga = document.getElementById('spinnerCarga');
         const mensajeContenedor = document.getElementById('mensajeContenedor');
 
-        // Precios simulados por calibre y mercado
-        let preciosSimulados = {};
+        let preciosSimulados = {
+            usa: {},
+            asia: {}
+        };
 
-        // Cargar precios con soporte offline
         async function cargarPrecios() {
             try {
                 if (navigator.onLine) {
                     const response = await fetch('controller/db_cargar_precios.php');
-                    preciosSimulados = await response.json();
-                    const db = await abrirDB();
+                    if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error);
+                    preciosSimulados = data;
+                    console.log('Precios cargados:', preciosSimulados);
+                    const db = await abrirDB(); // Error here: abrirDB is not defined
                     const tx = db.transaction('precios', 'readwrite');
-                    tx.objectStore('precios').put({ id: 'precios', data: preciosSimulados });
-                    console.log('Precios cargados y guardados:', preciosSimulados);
+                    await tx.objectStore('precios').put({
+                        id: 'precios',
+                        data: preciosSimulados
+                    });
                 } else {
-                    const db = await abrirDB();
+                    const db = await abrirDB(); // Error here: abrirDB is not defined
                     const tx = db.transaction('precios', 'readonly');
-                    const precios = await tx.objectStore('precios').get('precios');
-                    preciosSimulados = precios?.data || {};
+                    const stored = await tx.objectStore('precios').get('precios');
+                    preciosSimulados = stored?.data || {
+                        usa: {},
+                        asia: {}
+                    };
                     console.log('Precios cargados offline:', preciosSimulados);
+                    if (!preciosSimulados.usa && !preciosSimulados.asia) {
+                        mostrarConfirmacion('No hay precios disponibles offline.', 'bg-yellow-600');
+                    }
                 }
             } catch (error) {
                 console.error('Error al cargar precios:', error);
+                mostrarConfirmacion('Error al cargar precios: ' + error.message, 'bg-red-600');
             }
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            await cargarPrecios();
-            await cargarGramajesTipos();
-            await cargarHuertas(); // Asegurar que las huertas se carguen
-            estadoRed.textContent = navigator.onLine ? 'Online' : 'Offline';
-        });
-
-        // Vista previa de foto
-        inputFoto.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    vistaPrevia.src = event.target.result;
-                    vistaPrevia.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Cambiar formulario dinámico según selección
-        document.getElementById('exportacion').addEventListener('change', function() {
-            resultado.textContent = '';
-            btnGuardar.disabled = true;
-            btnGuardar.classList.add('opacity-50', 'cursor-not-allowed');
-
-            const valor = this.value;
-            contenedor.innerHTML = '';
-
-            if (valor === 'usa') {
-                contenedor.innerHTML = createSection('Mercado USA (Cat 1)', ['32s', '36s', '40s', '48s', '60s', '70s', '84s']);
-                contenedor.innerHTML += createSection('Mercado USA (Cat 2)', ['32s2', '36s2', '40s2', '48s2', '60s2', '70s2', '84s2']);
-                contenedor.innerHTML += createSection('Mercado Nacional', ['Extra', 'Primera', 'Canica', 'Comercial', 'Primera B', 'Desecho']);
-                contenedor.innerHTML += `<textarea placeholder="Observaciones" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white mt-4"></textarea>`;
-            } else if (valor === 'asia') {
-                contenedor.innerHTML = createSection('Mercado Japón', ['16s', '20s', '24s', '30s', '35s']);
-                contenedor.innerHTML += createSection('Mercado Canadá', ['12s_canada', '14s_canada', '16s/18s_canada', '20s/22s_canada', '20s_canada', '22s_canada', '24s_canada']);
-                contenedor.innerHTML += createSection('Mercado Nacional', ['extra', 'primera', 'primera b', 'comercial', 'canica', 'desecho']);
-                contenedor.innerHTML += `<textarea placeholder="Observaciones" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white mt-4"></textarea>`;
-            }
-
-            document.querySelectorAll('.input-porcentaje').forEach(input => {
-                input.addEventListener('input', calcularPromedio);
-            });
-        });
-
-        function createSection(titulo, calibres) {
-            let html = `<h2 class="text-md font-semibold text-green-400 mt-4">${titulo}</h2>`;
-            calibres.forEach(c => {
-                html += `
-                <div class="flex items-center mt-2 space-x-2">
-                  <label class="w-24">${c.toUpperCase()}</label>
-                  <input type="number" min="0" max="100" step="0.01" placeholder="%" class="input-porcentaje flex-grow px-3 py-2 rounded-l-lg bg-gray-800 border border-gray-600 text-white" data-calibre="${c}" />
-                  <span class="bg-gray-700 text-white px-3 py-2 rounded-r-lg select-none">%</span>
-                </div>
-                `;
-            });
-            return html;
-        }
-
-        function calcularPromedio() {
-            const exportacion = document.getElementById('exportacion').value;
-            let totalPorcentaje = 0;
-            let promedio = 0;
-
-            const inputs = Array.from(document.querySelectorAll('.input-porcentaje'));
-
-            inputs.forEach(input => {
-                const val = parseFloat(input.value);
-                if (!isNaN(val) && val > 0) {
-                    totalPorcentaje += val;
-
-                    const calibre = input.dataset.calibre;
-                    let precio = 0;
-
-                    if (exportacion === 'usa') {
-                        precio = preciosSimulados.usa[calibre] ?? 0;
-                    } else if (exportacion === 'asia') {
-                        if (preciosSimulados.asia[calibre] !== undefined) {
-                            precio = preciosSimulados.asia[calibre];
-                        }
-                    }
-
-                    promedio += (val * precio) / 100;
-                }
-            });
-
-            if (totalPorcentaje.toFixed(2) !== '100.00') {
-                resultado.classList.remove('text-green-500');
-                resultado.classList.add('text-red-500');
-                resultado.textContent = `❌ La suma de porcentajes es ${totalPorcentaje.toFixed(2)}%. Debe ser 100%.`;
-                btnGuardar.disabled = true;
-                btnGuardar.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                resultado.classList.remove('text-red-500');
-                resultado.classList.add('text-green-500');
-                resultado.textContent = `Promedio estimado: $${promedio.toFixed(2)}`;
-                btnGuardar.disabled = false;
-                btnGuardar.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
-        // Guardar estimación con soporte offline y geolocalización
-        btnGuardar.addEventListener('click', async () => {
-            const form = document.getElementById('formularioPrevio');
-            const exportacion = document.getElementById('exportacion').value;
-            const promedioText = resultado.textContent;
-            const promedio = parseFloat(promedioText.split('$')[1]) || 0;
-
-            if (!form.checkValidity()) {
-                alert('Por favor, completa todos los campos requeridos.');
-                return;
-            }
-
-            // Mostrar spinner
-            spinnerCarga.classList.remove('hidden');
-            btnGuardar.disabled = true;
-
-            // Obtener ubicación actual
-            let latitud = null;
-            let longitud = null;
-            try {
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 });
-                });
-                latitud = position.coords.latitude;
-                longitud = position.coords.longitude;
-            } catch (error) {
-                console.error('Error al obtener ubicación:', error);
-                alert('No se pudo obtener la ubicación. Asegúrate de permitir el acceso a la geolocalización.');
-                spinnerCarga.classList.add('hidden');
-                btnGuardar.disabled = false;
-                return;
-            }
-
-            const data = {
-                fecha: new Date().toISOString().split('T')[0],
-                productor: form[0].value,
-                huerta: form[1].value,
-                estimacion_cosecha: form[2].value,
-                municipio: form[3].value,
-                gramaje: form[4].value,
-                tipo_corte: form[5].value,
-                jefe_acopio: form[6].value,
-                exportacion,
-                observaciones: document.querySelector('textarea')?.value || '',
-                promedio_estimado: promedio,
-                foto: vistaPrevia.src || '',
-                latitud,
-                longitud,
-                detalles: {}
-            };
-
-            document.querySelectorAll('.input-porcentaje').forEach(input => {
-                const calibre = input.dataset.calibre;
-                const val = parseFloat(input.value) || 0;
-                data.detalles[calibre] = val;
-            });
-
-            try {
-                if (navigator.onLine) {
-                    const formData = new FormData();
-                    formData.append('data', JSON.stringify(data));
-                    if (inputFoto.files[0]) {
-                        formData.append('foto', inputFoto.files[0]);
-                    }
-
-                    const res = await fetch('controller/db_guardar_estimacion.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const responseData = await res.json();
-
-                    spinnerCarga.classList.add('hidden');
-                    btnGuardar.disabled = false;
-
-                    if (responseData.status === 'OK') {
-                        mostrarConfirmacion('¡Estimación guardada en el servidor!', 'bg-green-600');
-                        setTimeout(() => location.reload(), 2000);
-                    } else {
-                        alert('❌ Error al guardar la estimación: ' + responseData.error);
-                    }
-                } else {
-                    await guardarPendiente(data);
-                    spinnerCarga.classList.add('hidden');
-                    btnGuardar.disabled = false;
-                    mostrarConfirmacion('¡Estimación guardada localmente! Se sincronizará al reconectar.', 'bg-yellow-600');
-                }
-            } catch (error) {
-                console.error('Error al guardar:', error);
-                spinnerCarga.classList.add('hidden');
-                btnGuardar.disabled = false;
-                alert('❌ Error de conexión con el servidor.');
-            }
-        });
-
-        function mostrarConfirmacion(texto, bgColor) {
-            const mensaje = document.getElementById('mensajeConfirmacion');
-            const textoConfirmacion = document.getElementById('textoConfirmacion');
-            textoConfirmacion.textContent = texto;
-            mensajeContenedor.classList.remove('bg-green-600', 'bg-yellow-600');
-            mensajeContenedor.classList.add(bgColor);
-            mensaje.classList.remove('hidden');
-            setTimeout(() => mensaje.classList.add('hidden'), 3000);
-        }
-
-        // Cargar gramajes y tipos con soporte offline
+        // Cargar gramajes y tipos
         async function cargarGramajesTipos() {
             try {
-                let data;
-                if (navigator.onLine) {
-                    const res = await fetch('controller/db_gramaje_tipo.php');
-                    data = await res.json();
-                    const db = await abrirDB();
-                    const tx = db.transaction('config', 'readwrite');
-                    tx.objectStore('config').put({ id: 'gramajesTipos', data });
-                } else {
-                    const db = await abrirDB();
-                    const tx = db.transaction('config', 'readonly');
-                    data = (await tx.objectStore('config').get('gramajesTipos'))?.data || { gramajes: [], tipos: [] };
-                }
+                const res = await fetch('controller/db_gramaje_tipo.php');
+                if (!res.ok) throw new Error('Error en la respuesta del servidor: ' + res.status);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
 
                 const selectGramaje = document.getElementById('selectGramaje');
                 const selectTipoCorte = document.getElementById('selectTipoCorte');
@@ -425,13 +232,315 @@
                     option.textContent = t;
                     selectTipoCorte.appendChild(option);
                 });
+
+                if (navigator.onLine) {
+                    const db = await abrirDB();
+                    const tx = db.transaction('config', 'readwrite');
+                    tx.objectStore('config').put({
+                        id: 'gramajes_tipos',
+                        data
+                    });
+                }
             } catch (error) {
                 console.error('Error al cargar gramajes y tipos de corte:', error);
-                alert('Error al cargar gramajes y tipos de corte. Intenta de nuevo más tarde.');
             }
         }
 
-        // Sincronización al reconectar
+        // Cargar huertas
+        async function cargarHuertas() {
+            const datalist = document.getElementById('sugerenciasHuerta');
+            try {
+                let huertas = [];
+                if (navigator.onLine) {
+                    const response = await fetch('controller/db_buscar_huertas.php');
+                    if (!response.ok) throw new Error('Error en la respuesta del servidor: ' + response.status);
+                    huertas = await response.json();
+                    if (huertas.error) throw new Error(huertas.error);
+                    const db = await abrirDB();
+                    const tx = db.transaction('config', 'readwrite');
+                    tx.objectStore('config').put({
+                        id: 'huertas',
+                        data: huertas
+                    });
+                } else {
+                    const db = await abrirDB();
+                    const tx = db.transaction('config', 'readonly');
+                    const stored = await tx.objectStore('config').get('huertas');
+                    huertas = stored?.data || [];
+                }
+                datalist.innerHTML = '';
+                huertas.forEach(huerta => {
+                    const option = document.createElement('option');
+                    option.value = huerta;
+                    datalist.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error al cargar huertas:', error);
+                alert('Error al cargar huertas. Intenta de nuevo más tarde.');
+            }
+        }
+
+        // Cargar municipios y jefes
+        async function cargarFormularioDatos() {
+            try {
+                const res = await fetch('controller/db_formulario.php');
+                if (!res.ok) throw new Error('Error en la respuesta del servidor: ' + res.status);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                const selectMunicipio = document.getElementById('selectMunicipio');
+                const selectJefe = document.getElementById('selectJefe');
+
+                selectMunicipio.innerHTML = '<option value="">Seleccione un municipio</option>';
+                selectJefe.innerHTML = '<option value="">Seleccione un jefe</option>';
+
+                data.municipios.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m;
+                    option.textContent = m;
+                    selectMunicipio.appendChild(option);
+                });
+
+                data.jefes.forEach(j => {
+                    const option = document.createElement('option');
+                    option.value = j.id;
+                    option.textContent = j.nombre;
+                    selectJefe.appendChild(option);
+                });
+
+                if (navigator.onLine) {
+                    const db = await abrirDB();
+                    const tx = db.transaction('config', 'readwrite');
+                    tx.objectStore('config').put({
+                        id: 'formulario_datos',
+                        data
+                    });
+                }
+            } catch (error) {
+                console.error('Error al cargar municipios y jefes:', error);
+            }
+        }
+
+        // Vista previa de foto
+        inputFoto.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    vistaPrevia.src = event.target.result;
+                    vistaPrevia.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Cambiar formulario dinámico
+        document.getElementById('exportacion').addEventListener('change', function() {
+            resultado.textContent = '';
+            btnGuardar.disabled = true;
+            btnGuardar.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const valor = this.value;
+            contenedor.innerHTML = '';
+
+            if (valor === 'usa') {
+                contenedor.innerHTML = createSection('Mercado USA (Cat 1)', ['32s', '36s', '40s', '48s', '60s', '70s', '84s']);
+                contenedor.innerHTML += createSection('Mercado USA (Cat 2)', ['32s2', '36s2', '40s2', '48s2', '60s2', '70s2', '84s2']);
+                contenedor.innerHTML += createSection('Mercado Nacional', ['Extra', 'Primera', 'Canica', 'Comercial', 'Primera B', 'Desecho']);
+                contenedor.innerHTML += `<textarea placeholder="Observaciones" name="observaciones" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white mt-4"></textarea>`;
+            } else if (valor === 'asia') {
+                contenedor.innerHTML = createSection('Mercado Japón', ['16s', '20s', '24s', '30s', '35s']);
+                contenedor.innerHTML += createSection('Mercado Canadá', ['12s_canada', '14s_canada', '16s/18s_canada', '20s/22s_canada', '24s_canada']);
+                contenedor.innerHTML += createSection('Mercado Nacional', ['extra', 'primera', 'primera b', 'comercial', 'canica', 'desecho']);
+                contenedor.innerHTML += `<textarea placeholder="Observaciones" name="observaciones" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white mt-4"></textarea>`;
+            }
+
+            document.querySelectorAll('.input-porcentaje').forEach(input => {
+                input.addEventListener('input', calcularPromedio);
+            });
+        });
+
+        function createSection(titulo, calibres) {
+            let html = `<h2 class="text-md font-semibold text-green-400 mt-4">${titulo}</h2>`;
+            calibres.forEach(c => {
+                html += `
+                <div class="flex items-center mt-2 space-x-2">
+                    <label class="w-24">${c.toUpperCase()}</label>
+                    <input type="number" min="0" max="100" step="0.01" placeholder="%" class="input-porcentaje flex-grow px-3 py-2 rounded-l-lg bg-gray-800 border border-gray-600 text-white" data-calibre="${c}" />
+                    <span class="bg-gray-700 text-white px-3 py-2 rounded-r-lg select-none">%</span>
+                </div>`;
+            });
+            return html;
+        }
+
+        function calcularPromedio() {
+            const exportacion = document.getElementById('exportacion').value;
+            let totalPorcentaje = 0;
+            let promedio = 0;
+
+            const inputs = Array.from(document.querySelectorAll('.input-porcentaje'));
+            inputs.forEach(input => {
+                const val = parseFloat(input.value);
+                if (!isNaN(val) && val > 0) {
+                    totalPorcentaje += val;
+                    const calibre = input.dataset.calibre;
+                    let precio = 0;
+                    if (exportacion === 'usa') {
+                        precio = preciosSimulados.usa?.[calibre] ?? 0;
+                    } else if (exportacion === 'asia') {
+                        precio = preciosSimulados.asia?.[calibre] ?? 0;
+                    }
+                    promedio += (val * precio) / 100;
+                }
+            });
+
+            if (totalPorcentaje.toFixed(2) !== '100.00') {
+                resultado.classList.remove('text-green-500');
+                resultado.classList.add('text-red-500');
+                resultado.textContent = `❌ La suma de porcentajes es ${totalPorcentaje.toFixed(2)}%. Debe ser 100%.`;
+                btnGuardar.disabled = true;
+                btnGuardar.classList.add('opacity-50', 'cursor-not-allowed');
+            } else if (promedio === 0) {
+                resultado.classList.remove('text-green-500');
+                resultado.classList.add('text-red-500');
+                resultado.textContent = `❌ No se encontraron precios para calcular el promedio.`;
+                btnGuardar.disabled = true;
+                btnGuardar.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                resultado.classList.remove('text-red-500');
+                resultado.classList.add('text-green-500');
+                resultado.textContent = `Promedio estimado: $${promedio.toFixed(2)}`;
+                btnGuardar.disabled = false;
+                btnGuardar.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Obtener geolocalización
+        async function getGeolocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocalización no soportada por el navegador'));
+                }
+                navigator.geolocation.getCurrentPosition(
+                    position => resolve({
+                        latitud: position.coords.latitude,
+                        longitud: position.coords.longitude
+                    }),
+                    error => reject(error)
+                );
+            });
+        }
+
+        // Guardar estimación
+        btnGuardar.addEventListener('click', async () => {
+            const form = document.getElementById('formularioPrevio');
+            if (!form.checkValidity()) {
+                alert('Por favor, completa todos los campos requeridos.');
+                return;
+            }
+
+            const exportacion = document.getElementById('exportacion').value;
+            const promedioText = resultado.textContent;
+            const promedio = parseFloat(promedioText.split('$')[1]) || 0;
+
+            spinnerCarga.classList.remove('hidden');
+            btnGuardar.disabled = true;
+
+            const data = {
+                fecha: new Date().toISOString().split('T')[0],
+                productor: form.elements['productor'].value,
+                huerta: form.elements['huerta'].value,
+                estimacion_cosecha: form.elements['estimacion_cosecha'].value,
+                municipio: form.elements['municipio'].value,
+                gramaje: form.elements['gramaje'].value,
+                tipo_corte: form.elements['tipo_corte'].value,
+                jefe_acopio: form.elements['jefe_acopio'].value,
+                exportacion,
+                observaciones: document.querySelector('textarea[name="observaciones"]')?.value || '',
+                promedio_estimado: promedio,
+                detalles: {}
+            };
+
+            document.querySelectorAll('.input-porcentaje').forEach(input => {
+                const calibre = input.dataset.calibre;
+                const val = parseFloat(input.value) || 0;
+                data.detalles[calibre] = val;
+            });
+
+            try {
+                // Obtener geolocalización
+                const {
+                    latitud,
+                    longitud
+                } = await getGeolocation();
+                data.latitud = latitud;
+                data.longitud = longitud;
+            } catch (error) {
+                console.warn('No se pudo obtener geolocalización:', error);
+                data.latitud = null;
+                data.longitud = null;
+            }
+
+            const formData = new FormData();
+            formData.append('data', JSON.stringify(data));
+            const foto = inputFoto.files[0];
+            if (foto) {
+                formData.append('foto', foto);
+            }
+
+            try {
+                if (navigator.onLine) {
+                    const res = await fetch('controller/db_guardar_estimacion.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const responseData = await res.json();
+
+                    spinnerCarga.classList.add('hidden');
+                    btnGuardar.disabled = false;
+
+                    if (res.ok && responseData.status === 'OK') {
+                        mostrarConfirmacion('¡Estimación guardada correctamente!', 'bg-green-600');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        alert('❌ Error al guardar la estimación: ' + (responseData.error || 'Respuesta no válida'));
+                    }
+                } else {
+                    await guardarPendiente(data);
+                    spinnerCarga.classList.add('hidden');
+                    btnGuardar.disabled = false;
+                    mostrarConfirmacion('¡Estimación guardada localmente! Se sincronizará al reconectar.', 'bg-yellow-600');
+                }
+            } catch (error) {
+                console.error('Error al guardar:', error);
+                spinnerCarga.classList.add('hidden');
+                btnGuardar.disabled = false;
+                alert('❌ Error de conexión con el servidor.');
+            }
+        });
+
+        function mostrarConfirmacion(texto, bgColor) {
+            const mensaje = document.getElementById('mensajeConfirmacion');
+            document.getElementById('textoConfirmacion').textContent = texto;
+            mensajeContenedor.classList.remove('bg-green-600', 'bg-yellow-600');
+            mensajeContenedor.classList.add(bgColor);
+            mensaje.classList.remove('hidden');
+            setTimeout(() => mensaje.classList.add('hidden'), 3000);
+        }
+
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await cargarPrecios();
+                await cargarGramajesTipos();
+                await cargarHuertas();
+                await cargarFormularioDatos();
+                estadoRed.textContent = navigator.onLine ? 'Online' : 'Offline';
+            } catch (error) {
+                console.error('Error al inicializar:', error);
+            }
+        });
+        // Manejar estado de red
         window.addEventListener('online', async () => {
             estadoRed.textContent = 'Online';
             await sincronizarPendientes();
@@ -442,10 +551,6 @@
         });
 
         // Navegación entre secciones
-        const seccionEstimacion = document.getElementById('seccionEstimacion');
-        const seccionHistorial = document.getElementById('historial');
-        const seccionReportes = document.getElementById('reportes');
-
         document.getElementById('btnEstimacion').addEventListener('click', () => {
             seccionEstimacion.classList.remove('hidden');
             seccionHistorial.classList.add('hidden');
@@ -465,27 +570,6 @@
             seccionReportes.classList.remove('hidden');
         });
 
-        // Cargar historial con soporte offline
-        async function cargarHistorial() {
-            const tbody = document.getElementById('tablaHistorial');
-            tbody.innerHTML = '';
-            let estimaciones = [];
-            if (navigator.onLine) {
-                const res = await fetch('controller/db_obtener_estimaciones.php');
-                estimaciones = await res.json();
-                const db = await abrirDB();
-                const tx = db.transaction('config', 'readwrite');
-                tx.objectStore('config').put({ id: 'historial', data: estimaciones });
-            } else {
-                const db = await abrirDB();
-                estimaciones = (await db.transaction('config', 'readonly').objectStore('config').get('historial'))?.data || [];
-            }
-            estimaciones.forEach(e => {
-                const ubicacion = e.latitud && e.longitud ? `${e.latitud}, ${e.longitud}` : 'No disponible';
-                tbody.innerHTML += `<tr><td class="p-2">${e.fecha}</td><td class="p-2">${e.productor}</td><td class="p-2">$${e.promedio_estimado}</td><td class="p-2">${ubicacion}</td></tr>`;
-            });
-        }
-
         // Generar reporte
         document.getElementById('btnGenerarReporte').addEventListener('click', async () => {
             const inicio = document.getElementById('fechaInicio').value;
@@ -497,6 +581,7 @@
             let datos = [];
             if (navigator.onLine) {
                 const res = await fetch(`controller/db_reporte_estimaciones.php?inicio=${inicio}&fin=${fin}`);
+                if (!res.ok) throw new Error('Error en la respuesta del servidor: ' + res.status);
                 datos = await res.json();
             } else {
                 alert('Reportes requieren conexión a internet.');
@@ -517,13 +602,15 @@
                 },
                 options: {
                     scales: {
-                        y: { beginAtZero: true }
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
             });
         });
 
-        // Service Worker
+        // Registrar Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
@@ -532,7 +619,6 @@
             });
         }
     </script>
-
 </body>
 
 </html>

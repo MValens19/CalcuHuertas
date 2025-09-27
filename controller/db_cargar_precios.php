@@ -1,14 +1,15 @@
 <?php
-// obtener_precios.php
+// db_cargar_precios.php
 header('Content-Type: application/json');
 include '../config/db_precios.php'; // Conexión a la BD
 
 if ($conexion->connect_error) {
-    echo json_encode(['error' => 'Conexión fallida']);
+    echo json_encode(['error' => 'Conexión fallida: ' . $conexion->connect_error]);
     exit;
 }
 
 function limpiarDatos($arr, $excluir = [], $sufijo = '') {
+    if (!$arr) return [];
     $resultado = [];
     foreach ($arr as $clave => $valor) {
         if (in_array($clave, $excluir)) continue;
@@ -22,12 +23,21 @@ function limpiarDatos($arr, $excluir = [], $sufijo = '') {
 }
 
 function obtenerUltimoRegistro($conexion, $tabla, $idCampo = 'id') {
+    // Verificar si la tabla existe
+    $checkTable = mysqli_query($conexion, "SHOW TABLES LIKE '$tabla'");
+    if (mysqli_num_rows($checkTable) === 0) {
+        return null;
+    }
+
     $sql = "SELECT * FROM $tabla ORDER BY fecha DESC LIMIT 1";
     $res = mysqli_query($conexion, $sql);
+    if (!$res) {
+        return null;
+    }
     return mysqli_fetch_assoc($res);
 }
 
-$excluir = ['idnacional', 'fecha', 'tipo','idcanada','idjapon','id']; // ← Excluir también 'tipo'
+$excluir = ['id', 'idnacional', 'idjapon', 'idcanada', 'fecha', 'tipo'];
 
 $precios = [
     'usa' => [],
@@ -38,25 +48,32 @@ $precios = [
 $preciosGlobal = obtenerUltimoRegistro($conexion, 'precios_global');
 $nacional = obtenerUltimoRegistro($conexion, 'nacional', 'idnacional');
 if ($preciosGlobal) {
-    $precios['usa'] += limpiarDatos($preciosGlobal, $excluir);
+    $precios['usa'] = array_merge($precios['usa'], limpiarDatos($preciosGlobal, $excluir));
 }
 if ($nacional) {
-    $precios['usa'] += limpiarDatos($nacional, $excluir);
+    $precios['usa'] = array_merge($precios['usa'], limpiarDatos($nacional, $excluir));
 }
 
 // ASIA: japon, canada, nacional
 $japon = obtenerUltimoRegistro($conexion, 'japon', 'idjapon');
 $canada = obtenerUltimoRegistro($conexion, 'canada', 'idcanada');
-$nacional = obtenerUltimoRegistro($conexion, 'nacional', 'idnacional'); // reutilizada
-
+$nacional = obtenerUltimoRegistro($conexion, 'nacional', 'idnacional');
 if ($japon) {
-    $precios['asia'] += limpiarDatos($japon, $excluir);
+    $precios['asia'] = array_merge($precios['asia'], limpiarDatos($japon, $excluir));
 }
 if ($canada) {
-    $precios['asia'] += limpiarDatos($canada, $excluir, 'canada');
+    $precios['asia'] = array_merge($precios['asia'], limpiarDatos($canada, $excluir, 'canada'));
 }
 if ($nacional) {
-    $precios['asia'] += limpiarDatos($nacional, $excluir);
+    $precios['asia'] = array_merge($precios['asia'], limpiarDatos($nacional, $excluir));
+}
+
+// Validar si los precios están vacíos
+if (empty($precios['usa']) && empty($precios['asia'])) {
+    echo json_encode(['error' => 'No se encontraron precios en la base de datos']);
+    exit;
 }
 
 echo json_encode($precios, JSON_UNESCAPED_UNICODE);
+$conexion->close();
+?>
